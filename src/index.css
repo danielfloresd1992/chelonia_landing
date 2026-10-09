@@ -1,0 +1,6 @@
+@import "@fontsource-variable/manrope";
+@import "tailwindcss";
+@source not "../_material-original";
+@import "./styles/theme.css";
+@import "./styles/typography.css";
+@import "./styles/base.css";

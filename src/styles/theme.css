@@ -1,0 +1,118 @@
+/* Paleta completa (primitivos). Los componentes usan los roles de abajo, no estos. */
+@theme static {
+  --font-sans: "Manrope Variable", ui-sans-serif, system-ui, sans-serif;
+
+  /* Laguna: turquesa del logo (400). Texto y botones, del 600 hacia abajo. */
+  --color-laguna-50: #f0fafa;
+  --color-laguna-100: #d9f2f3;
+  --color-laguna-200: #b5e4e7;
+  --color-laguna-300: #85d0d5;
+  --color-laguna-400: #4fb6be;
+  --color-laguna-500: #3a9aa1;
+  --color-laguna-600: #26767c;
+  --color-laguna-700: #1f6066;
+  --color-laguna-800: #1c4f54;
+  --color-laguna-900: #1a4246;
+  --color-laguna-950: #0e2b2f;
+
+  /* Arena: neutros cálidos de los muros de piedra. */
+  --color-arena-50: #faf8f4;
+  --color-arena-100: #f3eee4;
+  --color-arena-200: #e7dfd0;
+  --color-arena-300: #d5c9b3;
+  --color-arena-400: #bdad91;
+  --color-arena-500: #a08d70;
+  --color-arena-600: #84725a;
+  --color-arena-700: #6b5b47;
+  --color-arena-800: #524638;
+  --color-arena-900: #3a322a;
+  --color-arena-950: #131209;
+
+  /* Madera: acento cálido, escaso. */
+  --color-madera-100: #f2e6dc;
+  --color-madera-300: #d4a27f;
+  --color-madera-500: #8a5a3b;
+}
+
+/* Roles: bg-background, text-foreground, bg-primary, border-border... */
+@theme {
+  --color-background: var(--color-arena-50);
+  --color-surface: #ffffff;
+  --color-surface-alt: var(--color-arena-100);
+  --color-border: var(--color-arena-200);
+  --color-foreground: var(--color-laguna-950);
+  --color-foreground-muted: var(--color-arena-700);
+  --color-primary: var(--color-laguna-600);
+  --color-primary-hover: var(--color-laguna-700);
+  --color-on-primary: #ffffff;
+  --color-accent: var(--color-madera-500);
+  --color-accent-soft: var(--color-madera-100);
+  /* Estrellas de valoración (decorativas, llevan texto alternativo) */
+  --color-rating: #e0a52d;
+
+  /* Movimiento con masa y muelle: duration-700 ease-fluid */
+  --ease-fluid: cubic-bezier(0.32, 0.72, 0, 1);
+
+  /* Entrada al cargar: animate-rise (con animation-delay para escalonar) */
+  --animate-rise: rise 1.2s var(--ease-fluid) backwards;
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(2rem);
+      filter: blur(12px);
+    }
+  }
+
+  /* Estrellas: aparición una a una (animate-star-in) y destello continuo (animate-twinkle) */
+  --animate-star-in: star-in 0.7s var(--ease-fluid) backwards;
+  --animate-twinkle: twinkle 2.8s ease-in-out infinite;
+
+  @keyframes star-in {
+    from {
+      opacity: 0;
+      transform: scale(0.3) rotate(-40deg);
+    }
+    60% {
+      opacity: 1;
+      transform: scale(1.2) rotate(8deg);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) rotate(0);
+    }
+  }
+
+  @keyframes twinkle {
+    0%,
+    100% {
+      transform: scale(1);
+      filter: brightness(1) drop-shadow(0 0 0 transparent);
+    }
+    50% {
+      transform: scale(1.12);
+      filter: brightness(1.35) drop-shadow(0 0 6px var(--color-rating));
+    }
+  }
+}
+
+/* Modo oscuro: class="dark" en <html>. Solo cambian los roles. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  .dark {
+    color-scheme: dark;
+    --color-background: var(--color-arena-950);
+    --color-surface: #1f1f1f;
+    --color-surface-alt: #272727;
+    --color-border: #313131;
+    --color-foreground: var(--color-arena-50);
+    --color-foreground-muted: var(--color-arena-300);
+    --color-primary: var(--color-laguna-400);
+    --color-primary-hover: var(--color-laguna-300);
+    --color-on-primary: var(--color-laguna-950);
+    --color-accent: var(--color-madera-300);
+    --color-accent-soft: var(--color-arena-900);
+    --color-rating: #f2c052;
+  }
+}
