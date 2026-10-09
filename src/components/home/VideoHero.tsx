@@ -1,6 +1,6 @@
 import { ArrowDownIcon } from '@phosphor-icons/react/dist/csr/ArrowDown'
 import { LeafIcon } from '@phosphor-icons/react/dist/csr/Leaf'
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { Link } from 'react-router'
 import videoHorizontalAv1 from '../../assets/video/hero-horizontal-av1.mp4'
 import videoHorizontal from '../../assets/video/hero-horizontal.mp4'
@@ -16,34 +16,51 @@ const AV1 = 'video/mp4; codecs="av01.0.08M.08"'
 export default function VideoHero() {
   const reduceMotion = usePrefersReducedMotion()
   const section = useRef<HTMLElement>(null)
+  const video = useRef<HTMLVideoElement>(null)
 
-  // Al bajar, el video se amplía y el contenido sube y se desvanece
+  // Al bajar, el contenido sube y se desvanece; el video se queda quieto
   useScrollFrame(section, (rect) => {
     if (reduceMotion) return
     const p = Math.min(1, Math.max(0, -rect.top / rect.height))
     section.current?.style.setProperty('--hero', p.toFixed(3))
   })
 
+  // El video está fijo en pantalla: se pausa cuando la portada sale de la vista
+  useEffect(() => {
+    const el = section.current
+    const v = video.current
+    if (!el || !v || reduceMotion) return
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) v.play().catch(() => {})
+      else v.pause()
+    })
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [reduceMotion])
+
   return (
-    <section ref={section} className="dark relative h-svh min-h-140 overflow-hidden bg-background text-foreground">
-      <video
-        autoPlay={!reduceMotion}
-        muted
-        loop
-        playsInline
-        preload="auto"
-        poster={poster}
-        aria-hidden="true"
-        className="absolute inset-0 size-full object-cover contrast-110 saturate-110"
-        style={{ transform: 'scale(calc(1 + var(--hero, 0) * 0.15))' }}
-      >
-        <source media="(max-aspect-ratio: 3/4)" src={videoVerticalAv1} type={AV1} />
-        <source media="(max-aspect-ratio: 3/4)" src={videoVertical} type="video/mp4" />
-        <source src={videoHorizontalAv1} type={AV1} />
-        <source src={videoHorizontal} type="video/mp4" />
-      </video>
-      {/* Capa oscura suave + viñeta: el video es nocturno, así que oscurece poco */}
-      <div className="absolute inset-0 bg-black/30 shadow-[inset_0_0_200px_rgba(0,0,0,0.45)]" />
+    // clip-path recorta también al video fijo: solo se ve dentro de la portada
+    <section ref={section} className="dark relative h-svh min-h-140 overflow-hidden bg-background text-foreground [clip-path:inset(0)]">
+      {/* Fijo en la pantalla (lvh: no cambia de tamaño con la barra del navegador móvil) */}
+      <div className="fixed inset-x-0 top-0 h-lvh" aria-hidden="true">
+        <video
+          ref={video}
+          autoPlay={!reduceMotion}
+          muted
+          loop
+          playsInline
+          preload="auto"
+          poster={poster}
+          className="size-full object-cover contrast-110 saturate-110"
+        >
+          <source media="(max-aspect-ratio: 3/4)" src={videoVerticalAv1} type={AV1} />
+          <source media="(max-aspect-ratio: 3/4)" src={videoVertical} type="video/mp4" />
+          <source src={videoHorizontalAv1} type={AV1} />
+          <source src={videoHorizontal} type="video/mp4" />
+        </video>
+        {/* Capa oscura suave + viñeta: el video es nocturno, así que oscurece poco */}
+        <div className="absolute inset-0 bg-black/30 shadow-[inset_0_0_200px_rgba(0,0,0,0.45)]" />
+      </div>
 
       <div
         className="relative flex h-full flex-col items-center justify-center px-4 pt-24 pb-24 md:px-6"
