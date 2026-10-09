@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { Outlet, useLocation } from 'react-router'
+import BackgroundMusic from './BackgroundMusic'
 import Footer from './Footer'
 import Nav from './Nav'
 
@@ -23,6 +24,7 @@ export default function Layout() {
         <Outlet />
       </main>
       <Footer />
+      <BackgroundMusic />
     </div>
   )
 }
