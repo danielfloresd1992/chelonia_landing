@@ -1,4 +1,4 @@
-import { lazy, Suspense, useRef } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import habitacion from '../../assets/fotos/habitacion-cuadro-pez.jpg?responsive'
 import playaAerea from '../../assets/fotos/playa-aerea-cayo.jpg?responsive'
 import terraza from '../../assets/fotos/terraza-cortinas-mar.jpg?responsive'
@@ -47,6 +47,7 @@ export default function Journey() {
   const reduceMotion = usePrefersReducedMotion()
   const section = useRef<HTMLElement>(null)
   const progress = useRef(0)
+  const [near, setNear] = useState(false)
 
   useScrollFrame(section, (rect, viewportHeight) => {
     const p = Math.min(1, Math.max(0, -rect.top / (rect.height - viewportHeight)))
@@ -54,15 +55,33 @@ export default function Journey() {
     section.current?.style.setProperty('--p', p.toFixed(4))
   })
 
+  // three.js y las fotos (≈3,5 MB) se cargan cuando el recorrido está a una pantalla de distancia
+  useEffect(() => {
+    const el = section.current
+    if (!el) return
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return
+        setNear(true)
+        observer.disconnect()
+      },
+      { rootMargin: '100% 0px' },
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
+
   if (reduceMotion) return <StaticJourney />
 
   return (
     <section id="recorrido" ref={section} aria-label="Recorrido por Chelonia" className="relative h-[300svh] md:h-[360svh]">
       <div className="sticky top-0 h-svh overflow-hidden">
         <div className="absolute inset-0" aria-hidden="true">
-          <Suspense fallback={null}>
-            <JourneyScene progress={progress} eventSource={section} />
-          </Suspense>
+          {near && (
+            <Suspense fallback={null}>
+              <JourneyScene progress={progress} eventSource={section} />
+            </Suspense>
+          )}
         </div>
 
         <div

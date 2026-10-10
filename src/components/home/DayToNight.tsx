@@ -5,6 +5,7 @@ import videoVertical from '../../assets/video/dia-noche-vertical.mp4'
 import videoHorizontal from '../../assets/video/dia-noche.mp4'
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion'
 import { useScrollFrame } from '../../hooks/useScrollFrame'
+import { heroReady } from '../../lib/heroReady'
 
 // `at`: punto del recorrido (0 a 1) en el que cada texto está visible
 const moments = [
@@ -38,28 +39,32 @@ export default function DayToNight() {
   const time = useRef(0)
   const [src, setSrc] = useState<string>()
 
-  // Se descarga entero como blob al acercarse: así cualquier fotograma es accesible al instante
+  // Se descarga entero como blob: así cualquier fotograma es accesible al instante. Empieza en
+  // cuanto el video de portada tiene margen (o si la sección se acerca antes), con prioridad
+  // baja para no frenar lo que se está viendo. Si la descarga falla, se reproduce en streaming.
   useEffect(() => {
     const el = section.current
     if (!el || reduceMotion) return
-    let objectUrl = ''
+    const url = window.matchMedia('(max-aspect-ratio: 3/4)').matches ? videoVertical : videoHorizontal
     const controller = new AbortController()
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry.isIntersecting) return
-        observer.disconnect()
-        const url = window.matchMedia('(max-aspect-ratio: 3/4)').matches ? videoVertical : videoHorizontal
-        fetch(url, { signal: controller.signal })
-          .then((res) => res.blob())
-          .then((blob) => {
-            objectUrl = URL.createObjectURL(blob)
-            setSrc(objectUrl)
-          })
-          .catch(() => {})
-      },
-      { rootMargin: '100% 0px' },
-    )
+    let objectUrl = ''
+    let started = false
+    const start = () => {
+      if (started || controller.signal.aborted) return
+      started = true
+      fetch(url, { signal: controller.signal, priority: 'low' })
+        .then((res) => res.blob())
+        .then((blob) => {
+          objectUrl = URL.createObjectURL(blob)
+          setSrc(objectUrl)
+        })
+        .catch(() => {
+          if (!controller.signal.aborted) setSrc(url)
+        })
+    }
+    const observer = new IntersectionObserver(([entry]) => entry.isIntersecting && start(), { rootMargin: '100% 0px' })
     observer.observe(el)
+    heroReady.then(start)
     return () => {
       observer.disconnect()
       controller.abort()

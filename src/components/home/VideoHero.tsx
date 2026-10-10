@@ -1,6 +1,6 @@
 import { ArrowDownIcon } from '@phosphor-icons/react/dist/csr/ArrowDown'
 import { LeafIcon } from '@phosphor-icons/react/dist/csr/Leaf'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, type SyntheticEvent } from 'react'
 import { Link } from 'react-router'
 import videoHorizontalAv1 from '../../assets/video/hero-horizontal-av1.mp4'
 import videoHorizontal from '../../assets/video/hero-horizontal.mp4'
@@ -9,6 +9,7 @@ import videoVerticalAv1 from '../../assets/video/hero-vertical-av1.mp4'
 import videoVertical from '../../assets/video/hero-vertical.mp4'
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion'
 import { useScrollFrame } from '../../hooks/useScrollFrame'
+import { markHeroReady } from '../../lib/heroReady'
 
 // AV1 pesa ~60% menos; quien no lo soporte recibe el MP4 (H.264)
 const AV1 = 'video/mp4; codecs="av01.0.08M.08"'
@@ -38,6 +39,17 @@ export default function VideoHero() {
     return () => observer.disconnect()
   }, [reduceMotion])
 
+  // Avisa cuando el video está descargado entero: lo demás ya no le quita ancho de banda.
+  // Si en 12 s no lo está (red muy lenta), libera igualmente las demás descargas.
+  const onProgress = (e: SyntheticEvent<HTMLVideoElement>) => {
+    const { buffered, duration } = e.currentTarget
+    if (duration && buffered.length && buffered.end(buffered.length - 1) >= duration - 0.5) markHeroReady()
+  }
+  useEffect(() => {
+    const timer = setTimeout(markHeroReady, 12000)
+    return () => clearTimeout(timer)
+  }, [])
+
   return (
     // clip-path recorta también al video fijo: solo se ve dentro de la portada
     <section ref={section} className="dark relative h-svh min-h-140 overflow-hidden bg-background text-foreground [clip-path:inset(0)]">
@@ -51,6 +63,7 @@ export default function VideoHero() {
           playsInline
           preload="auto"
           poster={poster}
+          onProgress={onProgress}
           className="size-full object-cover contrast-110 saturate-110"
         >
           <source media="(max-aspect-ratio: 3/4)" src={videoVerticalAv1} type={AV1} />
@@ -72,6 +85,7 @@ export default function VideoHero() {
             <img
               src="/logos/logo-web-2.png"
               alt="Chelonia Casa de Mar"
+              fetchPriority="high"
               className="w-72 drop-shadow-xl sm:w-96 md:w-120"
             />
           </h1>

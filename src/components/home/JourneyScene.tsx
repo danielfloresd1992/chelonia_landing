@@ -1,5 +1,5 @@
 import { Canvas, useFrame, useLoader, useThree } from '@react-three/fiber'
-import { Suspense, useEffect, useMemo, useRef, useState, type RefObject } from 'react'
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react'
 import { MathUtils, PlaneGeometry, TextureLoader, type Mesh, type MeshBasicMaterial } from 'three'
 // En el orden del recorrido: llegada, posada, mesa, mar, atardecer
 const names = [
@@ -90,14 +90,18 @@ interface PhotoProps {
   slot: Slot
   frameW: number
   frameH: number
+  onReady: (index: number) => void
 }
 
 // Cada foto carga por su cuenta y aparece en cuanto llega, sin esperar a las demás
-function Photo({ url, index, slot, frameW, frameH }: PhotoProps) {
+function Photo({ url, index, slot, frameW, frameH, onReady }: PhotoProps) {
   const source = useLoader(TextureLoader, url)
   const gl = useThree((state) => state.gl)
   const mesh = useRef<Mesh>(null)
   const fade = useRef(0)
+
+  // Se monta cuando la textura ya llegó: avisa para que empiece la siguiente
+  useEffect(() => onReady(index), [onReady, index])
 
   const { texture, geometry } = useMemo(() => {
     const { width, height } = source.image as HTMLImageElement
@@ -139,6 +143,9 @@ function Gallery({ progress }: { progress: RefObject<number> }) {
   const urls = size.width < 768 ? photosMobile : photosDesktop
   // Todas las fotos con el mismo marco. Horizontal: 3:2 a los lados del camino. Vertical: 4:5.
   const frame = portrait ? { w: 2.6, h: 3.25 } : { w: 5, h: 3.4 }
+  // Las fotos se piden de dos en dos y en el orden del recorrido: las primeras llegan antes
+  const [ready, setReady] = useState(0)
+  const onReady = useCallback((index: number) => setReady((n) => Math.max(n, index + 1)), [])
 
   const slots = useMemo<Slot[]>(
     () =>
@@ -169,11 +176,14 @@ function Gallery({ progress }: { progress: RefObject<number> }) {
 
   return (
     <group>
-      {urls.map((url, i) => (
-        <Suspense key={url} fallback={null}>
-          <Photo url={url} index={i} slot={slots[i]} frameW={frame.w} frameH={frame.h} />
-        </Suspense>
-      ))}
+      {urls.map(
+        (url, i) =>
+          i < ready + 2 && (
+            <Suspense key={url} fallback={null}>
+              <Photo url={url} index={i} slot={slots[i]} frameW={frame.w} frameH={frame.h} onReady={onReady} />
+            </Suspense>
+          ),
+      )}
     </group>
   )
 }
